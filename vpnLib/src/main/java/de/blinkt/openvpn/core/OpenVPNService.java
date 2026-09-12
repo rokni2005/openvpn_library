@@ -881,23 +881,37 @@ public class OpenVPNService extends VpnService implements StateListener, Callbac
 
         IpAddress multicastRange = new IpAddress(new CIDRIP("224.0.0.0", 3), true);
 
-        for (IpAddress route : positiveIPv4Routes) {
-            try {
+        // فیکس: نسخه‌ی اصلیِ nizwar همیشه فقط positive-only routes رو اضافه
+        // می‌کرد (حلقه‌های پایین)، حتی رو اندروید ۱۳+ — در حالی که
+        // schwabe/ics-openvpn رسمی رو اندروید ۱۳+ (Tiramisu) از
+        // installRoutesExcluded (که از API جدیدترِ excludeRoute استفاده
+        // می‌کنه) استفاده می‌کنه. چون positive-only-mode این نسخه
+        // route‌های split-default (0.0.0.0/1 + 128.0.0.0/1) رو درست نصب
+        // نمی‌کرد، روی اندروید ۱۳+ ترافیک به‌جای تونل از اینترنتِ خودِ
+        // گوشی رد می‌شد (تاییدشده با adb logcat زنده). این دقیقاً همون
+        // مسیری‌ه که برنامه‌ی رسمیِ OpenVPN استفاده می‌کنه.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            installRoutesExcluded(builder, mRoutes);
+            installRoutesExcluded(builder, mRoutesv6);
+        } else {
+            for (IpAddress route : positiveIPv4Routes) {
+                try {
 
-                if (multicastRange.containsNet(route))
-                    VpnStatus.logDebug(R.string.ignore_multicast_route, route.toString());
-                else
-                    builder.addRoute(route.getIPv4Address(), route.networkMask);
-            } catch (IllegalArgumentException ia) {
-                VpnStatus.logError(getString(R.string.route_rejected) + route + " " + ia.getLocalizedMessage());
+                    if (multicastRange.containsNet(route))
+                        VpnStatus.logDebug(R.string.ignore_multicast_route, route.toString());
+                    else
+                        builder.addRoute(route.getIPv4Address(), route.networkMask);
+                } catch (IllegalArgumentException ia) {
+                    VpnStatus.logError(getString(R.string.route_rejected) + route + " " + ia.getLocalizedMessage());
+                }
             }
-        }
 
-        for (IpAddress route6 : positiveIPv6Routes) {
-            try {
-                builder.addRoute(route6.getIPv6Address(), route6.networkMask);
-            } catch (IllegalArgumentException ia) {
-                VpnStatus.logError(getString(R.string.route_rejected) + route6 + " " + ia.getLocalizedMessage());
+            for (IpAddress route6 : positiveIPv6Routes) {
+                try {
+                    builder.addRoute(route6.getIPv6Address(), route6.networkMask);
+                } catch (IllegalArgumentException ia) {
+                    VpnStatus.logError(getString(R.string.route_rejected) + route6 + " " + ia.getLocalizedMessage());
+                }
             }
         }
 
@@ -986,6 +1000,26 @@ public class OpenVPNService extends VpnService implements StateListener, Callbac
             return null;
         }
 
+    }
+
+    // فیکس: پورت‌شده از schwabe/ics-openvpn رسمی — نسخه‌ی nizwar این متد رو
+    // اصلاً نداشت (نگاه کن به کامنتِ بالای صدازننده‌ش).
+    @android.annotation.TargetApi(Build.VERSION_CODES.TIRAMISU)
+    private void installRoutesExcluded(Builder builder, NetworkSpace routes) {
+        for (IpAddress ipIncl : routes.getNetworks(true)) {
+            try {
+                builder.addRoute(ipIncl.getPrefix());
+            } catch (UnknownHostException | IllegalArgumentException ia) {
+                VpnStatus.logError(getString(R.string.route_rejected) + ipIncl + " " + ia.getLocalizedMessage());
+            }
+        }
+        for (IpAddress ipExcl : routes.getNetworks(false)) {
+            try {
+                builder.excludeRoute(ipExcl.getPrefix());
+            } catch (UnknownHostException | IllegalArgumentException ia) {
+                VpnStatus.logError(getString(R.string.route_rejected) + ipExcl + " " + ia.getLocalizedMessage());
+            }
+        }
     }
 
     private boolean isLockdownEnabledCompat() {
