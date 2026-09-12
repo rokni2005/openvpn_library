@@ -203,6 +203,29 @@ public class NetworkSpace {
             return a && b;
 
         }
+
+        @android.annotation.TargetApi(Build.VERSION_CODES.TIRAMISU)
+        public android.net.IpPrefix getPrefix() throws UnknownHostException {
+            if (isV4){
+                /* add 0x01 00 00 00 00, so that all representations are 5 byte otherwise
+                /* numbers that are above 0x7fffffff get a leading 0x00 byte to not be negative
+                 and small number 1-3 bytes*/
+                byte[] ipBytes = netAddress.add(java.math.BigInteger.valueOf(0x0100000000L)).toByteArray();
+                ipBytes = java.util.Arrays.copyOfRange(ipBytes, 1, 5);
+
+                InetAddress inet4addr = java.net.Inet4Address.getByAddress(ipBytes);
+                return new android.net.IpPrefix(inet4addr, networkMask);
+            }
+            else
+            {
+                /* same dance for IPv6 */
+                byte[] ipBytes = netAddress.add(java.math.BigInteger.ONE.shiftLeft(128)).toByteArray();
+                ipBytes = java.util.Arrays.copyOfRange(ipBytes, 1, 17);
+
+                InetAddress inet6addr = Inet6Address.getByAddress(ipBytes);
+                return new android.net.IpPrefix(inet6addr, networkMask);
+            }
+        }
     }
 
 
