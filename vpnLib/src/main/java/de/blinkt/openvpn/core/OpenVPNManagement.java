@@ -16,6 +16,12 @@ public interface OpenVPNManagement {
         screenOff,
     }
 
+    enum SignaturePadding {
+        RSA_PKCS1_PSS_PADDING,
+        RSA_PKCS1_PADDING,
+        NO_PADDING
+    }
+
     int mBytecountInterval = 2;
 
     void reconnect();
@@ -42,4 +48,10 @@ public interface OpenVPNManagement {
      * @param response  Base64 encoded response
      */
     void sendCRResponse(String response);
+
+    /**
+     * Sends an ACC message.
+     */
+    void sendAccMessage(AccMessage msg);
 }
+

@@ -14,17 +14,19 @@ import android.content.ServiceConnection;
 import android.os.IBinder;
 
 
+import de.blinkt.openvpn.core.IOpenVPNServiceInternal;
 import de.blinkt.openvpn.core.OpenVPNService;
 import de.blinkt.openvpn.core.ProfileManager;
 
 public class DisconnectVPNActivity extends Activity implements DialogInterface.OnClickListener, DialogInterface.OnCancelListener {
-    protected static OpenVPNService mService;
+    // OpenVPNService no longer exposes a LocalBinder (official now binds via
+    // the IOpenVPNServiceInternal AIDL interface exclusively) -- use that
+    // directly instead, same as official's own activities/DisconnectVPN.java.
+    protected static IOpenVPNServiceInternal mService;
     private ServiceConnection mConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName className, IBinder service) {
-//            // We've bound to LocalService, cast the IBinder and get LocalService instance
-            OpenVPNService.LocalBinder binder = (OpenVPNService.LocalBinder) service;
-            mService = binder.getService();
+            mService = IOpenVPNServiceInternal.Stub.asInterface(service);
         }
 
         @Override
@@ -69,8 +71,12 @@ public class DisconnectVPNActivity extends Activity implements DialogInterface.O
     }
     public void stopVpn(){
         ProfileManager.setConntectedVpnProfileDisconnected(this);
-        if (mService != null && mService.getManagement() != null) {
-            mService.getManagement().stopVPN(false);
+        if (mService != null) {
+            try {
+                mService.stopVPN(false);
+            } catch (android.os.RemoteException e) {
+                de.blinkt.openvpn.core.VpnStatus.logException(e);
+            }
         }
     }
 
