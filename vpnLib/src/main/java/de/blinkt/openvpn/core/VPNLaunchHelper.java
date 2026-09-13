@@ -103,7 +103,33 @@ public class VPNLaunchHelper {
     // Compatibility overload for the Flutter bridge (OpenVpnApi.startVpnInternal),
     // which predates official's startReason/replace_running_vpn parameters.
     public static void startOpenVpn(VpnProfile startprofile, Context context) {
+        installCrashReportHandler(context.getApplicationContext());
         startOpenVpn(startprofile, context, "Flutter API", true);
+    }
+
+    // Diagnostic-only, temporary: shows any uncaught exception on screen
+    // instead of the process just dying silently, so a crash on connect can
+    // be read off the device with no computer/ADB. Installed here because
+    // this is the one call every connect attempt from the Flutter side goes
+    // through. See CrashReportActivity; remove once the official-source
+    // replacement is confirmed stable.
+    private static void installCrashReportHandler(final Context appContext) {
+        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                try {
+                    java.io.StringWriter sw = new java.io.StringWriter();
+                    e.printStackTrace(new java.io.PrintWriter(sw));
+                    Intent i = new Intent(appContext, de.blinkt.openvpn.CrashReportActivity.class);
+                    i.putExtra("trace", sw.toString());
+                    i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    appContext.startActivity(i);
+                } catch (Throwable ignored) {
+                }
+                android.os.Process.killProcess(android.os.Process.myPid());
+                System.exit(1);
+            }
+        });
     }
 
     public static void startOpenVpn(VpnProfile startprofile, Context context, String startReason, boolean replace_running_vpn) {

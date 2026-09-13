@@ -11,6 +11,11 @@
         <activity android:name=".VPNHelper"
             android:exported="true"
             tools:ignore="Instantiatable" />
+        <!-- Diagnostic-only, temporary: see CrashReportActivity.java -->
+        <activity android:name=".CrashReportActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.DeviceDefault.Light" />
         <!-- Begin Activity by ics-openvpn -->
         <service
             android:name=".core.OpenVPNService"
