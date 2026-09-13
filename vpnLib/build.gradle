@@ -2,10 +2,14 @@ apply plugin: 'com.android.library'
 group = 'com.github.nizwar'
 
 android {
-    compileSdk 33
+    // بالا برده شد از ۳۳: مقدارِ "specialUse" برای foregroundServiceType
+    // (که سرویسِ OpenVPNService بهش نیاز داره، چون از Android 14+ هر
+    // foreground service باید یه type اعلام کنه) تو attrs پلتفرمِ ۳۳ اصلاً
+    // تعریف نشده -- AAPT با کامپایلِ ۳۳ ردش می‌کنه.
+    compileSdk 34
     defaultConfig {
         minSdkVersion 21
-        targetSdkVersion 33
+        targetSdkVersion 34
         versionCode 1
         versionName "1.0"
         ndkVersion "22.1.7171670"
