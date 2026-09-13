@@ -49,6 +49,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -1370,6 +1371,30 @@ public class OpenVPNService extends VpnService implements StateListener, Callbac
         vpnstatus.putExtra("status", level.toString());
         vpnstatus.putExtra("detailstatus", state);
         sendBroadcast(vpnstatus, permission.ACCESS_NETWORK_STATE);
+
+        // openvpn_sf_flutter's plugin (id.superfuture.openvpn_sf_flutter,
+        // pulled in via pub.dev, not part of this library) is written
+        // against nizwar's original fork's Flutter bridge, which added a
+        // "connectionState" broadcast plus this cached static `state` string
+        // on top of stock ics-openvpn -- OpenVPNFlutterPlugin.java calls the
+        // static OpenVPNService.getStatus()/setDefaultStatus() below
+        // directly, so both need to keep existing and behaving the same for
+        // the plugin to compile and report real status. Restored verbatim
+        // from nizwar's fork.
+        Intent connectionState = new Intent("connectionState");
+        connectionState.putExtra("state", state);
+        OpenVPNService.state = state;
+        LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(connectionState);
+    }
+
+    private static String state = "";
+
+    public static String getStatus() {
+        return state;
+    }
+
+    public static void setDefaultStatus() {
+        state = "idle";
     }
 
     @Override
