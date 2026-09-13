@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 group = 'com.github.nizwar'
 
 android {
-    compileSdk 34
+    compileSdk 33
     defaultConfig {
         minSdkVersion 21
         targetSdkVersion 33

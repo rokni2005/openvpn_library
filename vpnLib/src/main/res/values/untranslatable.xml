@@ -76,7 +76,6 @@
   <string name="eol_notice_header">End of service</string>
   <string name="eol_notice">The program and its components are under open-source licenses that allow you to use this app forever  according to terms of the open-source licenses for details.&lt;p&gt; However, the author reserves the right to suspend development or stop publishing the OpenVPN app or updates  to it at any time.</string>
   <string translatable="false" name="import_from_access_server">OpenVPN Access Server</string>
-  <string name="abi_mismatch">Preferred native ABI precedence of this device (%1$s) and ABI reported by native libraries (%2$s) mismatch</string>
   <string name="faq_title_ncp">Failed to negotiate cipher with server</string>
   <string name="import_from_URL">URL</string>
   <string name="restriction_pausevpn">Pause VPN when screen is off and less than 64 kB transferred data in 60s</string>
