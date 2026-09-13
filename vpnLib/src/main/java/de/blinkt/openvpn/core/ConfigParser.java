@@ -503,9 +503,10 @@ public class ConfigParser {
                     np.mSearchDomain = dhcpoption.get(2);
                 } else if (type.equals("DNS")) {
                     np.mOverrideDNS = true;
-                    if (np.mDNS1.equals(VpnProfile.DEFAULT_DNS1))
+                    if (np.mDNS1.equals(VpnProfile.DEFAULT_DNS1)) {
                         np.mDNS1 = arg;
-                    else
+                        np.mDNS2 = "";
+                    } else
                         np.mDNS2 = arg;
                 }
             }
@@ -664,7 +665,7 @@ public class ConfigParser {
             else if (authretry.get(1).equals("nointeract"))
                 np.mAuthRetry = VpnProfile.AUTH_RETRY_NOINTERACT;
             else if (authretry.get(1).equals("interact"))
-                np.mAuthRetry = VpnProfile.AUTH_RETRY_NOINTERACT;
+                np.mAuthRetry = VpnProfile.AUTH_RETRY_INTERACT;
             else
                 throw new ConfigParseError("Unknown parameter to auth-retry: " + authretry.get(2));
         }
