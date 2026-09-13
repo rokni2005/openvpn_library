@@ -215,8 +215,10 @@ public class ExtAuthHelper {
         Intent intent = new Intent(ACTION_CERT_PROVIDER);
         intent.setPackage(packagename);
 
+        // BIND_ALLOW_ACTIVITY_STARTS نیازمند API 34 هست، این ماژول با
+        // compileSdk 33 (سقفِ AGP 7.3.1) بیلد می‌شه، پس صرفاً حذفش می‌کنیم.
         if (!context.bindService(intent, extAuthServiceConnection,
-                Context.BIND_AUTO_CREATE | Context.BIND_ALLOW_ACTIVITY_STARTS)) {
+                Context.BIND_AUTO_CREATE)) {
             throw new KeyChainException("could not bind to external authenticator app: " + packagename);
         }
         return new ExternalAuthProviderConnection(context, extAuthServiceConnection, q.take());

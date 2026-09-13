@@ -11,6 +11,20 @@ android {
         ndkVersion "22.1.7171670"
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
 
+        // official's app.build.gradle defines these via product flavors
+        // (skeleton/ui) and an openvpn3 feature flag -- this module has
+        // neither, so declare them directly. FLAVOR MUST be "skeleton":
+        // NativeUtils's static initializer loads libosslspeedtest.so
+        // unless FLAVOR=="skeleton", and that .so is not bundled in
+        // jniLibs/ here -- any other value crashes with
+        // UnsatisfiedLinkError the first time this class loads.
+        // openvpn3=false matches VpnProfile's check since this module
+        // never bundled the OpenVPN3 core.
+        buildConfigField "String", "FLAVOR", '"skeleton"'
+        buildConfigField "boolean", "openvpn3", "false"
+    }
+    buildFeatures {
+        buildConfig true
     }
     buildTypes {
         release {

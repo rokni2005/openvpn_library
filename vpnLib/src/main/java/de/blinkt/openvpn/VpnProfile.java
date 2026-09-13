@@ -36,7 +36,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.Serial;
 import java.io.Serializable;
 import java.io.StringWriter;
 import java.security.*;
@@ -182,7 +181,6 @@ public class VpnProfile implements Serializable, Cloneable {
 
 
     static class ChangeLogEntry implements Serializable {
-        @Serial
         private static final long serialVersionUID = 6032413096860917402L;
 
         public long time;
