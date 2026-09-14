@@ -15,6 +15,7 @@ import static de.blinkt.openvpn.core.NetworkSpace.IpAddress;
 import android.Manifest.permission;
 import android.annotation.TargetApi;
 import android.app.Notification;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.UiModeManager;
@@ -27,6 +28,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.ShortcutManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.ProxyInfo;
 import android.net.Uri;
@@ -807,6 +809,47 @@ public class OpenVPNService extends VpnService implements StateListener, Callbac
         mCommandHandlerThread = new HandlerThread("OpenVPNServiceCommandThread");
         mCommandHandlerThread.start();
         mCommandHandler = new Handler(mCommandHandlerThread.getLooper());
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+            createNotificationChannels();
+    }
+
+    // Official's own ICSOpenVPNApplication.onCreate() normally does this,
+    // but that class is never the Flutter app's actual Application class
+    // (Flutter apps use their own), so it never runs and the three channels
+    // below never get created -- every notify() with a channel that was
+    // never registered via createNotificationChannel() makes
+    // startForeground() throw CannotPostForegroundServiceNotificationException
+    // ("Bad notification for startForeground") on modern Android, confirmed
+    // live on a real device. OpenVPNService.onCreate() runs every time
+    // regardless of which Application class the host app uses, so create
+    // the channels here instead. Logic ported verbatim from
+    // ICSOpenVPNApplication.createNotificationChannels().
+    @androidx.annotation.RequiresApi(api = Build.VERSION_CODES.O)
+    private void createNotificationChannels() {
+        NotificationManager notificationManager =
+                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+        NotificationChannel bgChannel = new NotificationChannel(NOTIFICATION_CHANNEL_BG_ID,
+                getString(R.string.channel_name_background), NotificationManager.IMPORTANCE_MIN);
+        bgChannel.setDescription(getString(R.string.channel_description_background));
+        bgChannel.enableLights(false);
+        bgChannel.setLightColor(Color.DKGRAY);
+        notificationManager.createNotificationChannel(bgChannel);
+
+        NotificationChannel statusChannel = new NotificationChannel(NOTIFICATION_CHANNEL_NEWSTATUS_ID,
+                getString(R.string.channel_name_status), NotificationManager.IMPORTANCE_LOW);
+        statusChannel.setDescription(getString(R.string.channel_description_status));
+        statusChannel.enableLights(true);
+        statusChannel.setLightColor(Color.BLUE);
+        notificationManager.createNotificationChannel(statusChannel);
+
+        NotificationChannel userreqChannel = new NotificationChannel(NOTIFICATION_CHANNEL_USERREQ_ID,
+                getString(R.string.channel_name_userreq), NotificationManager.IMPORTANCE_HIGH);
+        userreqChannel.setDescription(getString(R.string.channel_description_userreq));
+        userreqChannel.enableVibration(true);
+        userreqChannel.setLightColor(Color.CYAN);
+        notificationManager.createNotificationChannel(userreqChannel);
     }
 
     @Override
