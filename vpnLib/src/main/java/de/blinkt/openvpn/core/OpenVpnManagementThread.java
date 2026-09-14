@@ -392,8 +392,19 @@ public class OpenVpnManagementThread implements Runnable, OpenVPNManagement {
     }
 
     boolean shouldBeRunning() {
+        // OpenVPNService posts DeviceStateReceiver's construction (which is
+        // what calls setPauseCallback) via guiHandler.post(), so there's a
+        // real startup window where the native process has already
+        // connected to the management socket and sent its first ">HOLD:"
+        // before mPauseCallback is set. Since handleHold() only runs once
+        // per actual HOLD message, treating a null callback as "should
+        // pause" here means "hold release" is never sent and the process
+        // waits forever -- confirmed live (process alive, zero CPU, zero
+        // sockets, indefinitely) on a real device. A null callback means no
+        // pause mechanism is registered *yet*, not that there's a reason to
+        // pause, so default to running.
         if (mPauseCallback == null)
-            return false;
+            return true;
         else
             return mPauseCallback.shouldBeRunning();
     }
