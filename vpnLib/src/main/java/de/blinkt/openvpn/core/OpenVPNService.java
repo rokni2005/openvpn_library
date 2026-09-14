@@ -812,6 +812,19 @@ public class OpenVPNService extends VpnService implements StateListener, Callbac
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             createNotificationChannels();
+
+        // Same root cause class as the notification channels above:
+        // ICSOpenVPNApplication.onCreate() normally does
+        // `new StatusListener().init(context)`, which -- since this module's
+        // FLAVOR is "skeleton" -- makes StatusListener start forwarding
+        // every VpnStatus log line (including openvpn's own stdout, piped
+        // in via OpenVPNThread) to Logcat via Log.i/d/e/v. That class never
+        // runs in this app, so none of openvpn's own connection log ever
+        // reached Logcat, making a live-device diagnosis of any actual
+        // connect failure impossible. Temporary, diagnostic: revisit once
+        // real logcat visibility into connection failures is no longer
+        // needed for support.
+        new StatusListener().init(getApplicationContext());
     }
 
     // Official's own ICSOpenVPNApplication.onCreate() normally does this,
