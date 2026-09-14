@@ -70,6 +70,14 @@
             android:exported="true"
             android:permission="android.permission.BIND_JOB_SERVICE"/>
 
+        <!-- Missed in the previous pass: StatusListener.init() (now called
+             from OpenVPNService.onCreate() to forward VpnStatus's log --
+             openvpn's own output included -- to Logcat) binds to this
+             service. Undeclared, that bindService() call just silently
+             failed, so the log-forwarding fix never actually activated. -->
+        <service android:name=".core.OpenVPNStatusService"
+            android:exported="false" />
+
         <service
             android:name=".api.ExternalOpenVPNService"
             android:exported="true"
