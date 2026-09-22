@@ -24,7 +24,10 @@ import de.blinkt.openvpn.core.VpnStatus.LogLevel;
 
 import java.io.DataInputStream;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -111,9 +114,14 @@ public class StatusListener implements VpnStatus.LogListener, VpnStatus.ProfileN
                     VpnStatus.initLogCache(mCacheDir);
                     /* Set up logging to Logcat with a context) */
 
-                    if (BuildConfig.DEBUG || BuildConfig.FLAVOR.equals("skeleton")) {
-                        VpnStatus.addLogListener(StatusListener.this);
-                    }
+                    // Always forward, not just BuildConfig.DEBUG builds: this AAR is
+                    // always compiled as a release variant on JitPack, so that flag
+                    // is permanently false here regardless of the app's own build
+                    // type, and the Logcat-forwarding this gate was meant to enable
+                    // never actually activated. newLog() below also now persists
+                    // each line to a file, since Logcat itself needs adb, which
+                    // isn't always available when debugging a report from the field.
+                    VpnStatus.addLogListener(StatusListener.this);
                 }
 
             } catch (RemoteException | IOException e) {
@@ -173,6 +181,9 @@ public class StatusListener implements VpnStatus.LogListener, VpnStatus.ProfileN
         }
     }
 
+    private static final SimpleDateFormat LOG_FILE_TIME_FORMAT =
+            new SimpleDateFormat("HH:mm:ss.SSS", Locale.US);
+
     @Override
     public void newLog(LogItem logItem) {
         String tag = pkgName + "(OpenVPN)";
@@ -182,14 +193,31 @@ public class StatusListener implements VpnStatus.LogListener, VpnStatus.ProfileN
             tag += String.format(Locale.US, "[%ds ago]", logAge/1000 );
         }
 
+        String msg = logItem.getString(mContext);
         switch (logItem.getLogLevel()) {
-            case INFO -> Log.i(tag, logItem.getString(mContext));
-            case DEBUG -> Log.d(tag, logItem.getString(mContext));
-            case ERROR -> Log.e(tag, logItem.getString(mContext));
-            case VERBOSE -> Log.v(tag, logItem.getString(mContext));
-            default -> Log.w(tag, logItem.getString(mContext));
+            case INFO -> Log.i(tag, msg);
+            case DEBUG -> Log.d(tag, msg);
+            case ERROR -> Log.e(tag, msg);
+            case VERBOSE -> Log.v(tag, msg);
+            default -> Log.w(tag, msg);
         }
 
+        // Logcat needs adb, which isn't always available when debugging a
+        // report from the field -- also persist every line to a plain file
+        // next to the app's own cache dir, so it can be picked up and
+        // included the same way the app's own Dart-side log already is.
+        if (mCacheDir != null) {
+            try (FileWriter fw = new FileWriter(new File(mCacheDir, "native_openvpn.log"), true)) {
+                fw.write(LOG_FILE_TIME_FORMAT.format(new Date(logItem.getLogtime())));
+                fw.write(" [");
+                fw.write(logItem.getLogLevel().toString());
+                fw.write("] ");
+                fw.write(msg);
+                fw.write("\n");
+            } catch (IOException e) {
+                // best-effort only
+            }
+        }
     }
 
     @Override
